@@ -57,7 +57,7 @@ class BasePostgresView(object):
     def filter(self, **kwargs):
         def __query_generate(key, dictionary):
             if isinstance(dictionary[key], str):
-                return "%s=\"%s\"" % (key, dictionary[key])
+                return "%s=\'%s\'" % (key, dictionary[key])
             return "%s=%s" % (key, dictionary[key])
         if set(kwargs.keys()) - set(self.rows_items):
            raise Exception('Fields \"%s\" not supported' % ','.join(set(kwargs.keys()) - set(self.rows_items)))
