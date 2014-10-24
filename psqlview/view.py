@@ -1,5 +1,5 @@
 from psqlview.base import Singleton
-
+from django.db.transaction import TransactionManagementError
 __author__ = 'vako'
 
 
@@ -23,7 +23,10 @@ class BasePostgresView(object):
         self.connection = connection
         cursor = self.connection.cursor()
         cursor.execute(self.get_initial_view())
-        self.connection.commit()
+        try:
+            self.connection.commit()
+        except TransactionManagementError as e:
+            pass
         self.cache = {}
 
     def get_initial_view(self):
@@ -34,7 +37,7 @@ class BasePostgresView(object):
     def _query(self, items="*", wheres='', orders=''):
         cursor = self.connection.cursor()
         cursor.execute('SELECT {items} FROM {view_name} {wheres}'.format(
-        view_name=self.sql_view_name, items=items, wheres=wheres))
+            view_name=self.sql_view_name, items=items, wheres=wheres))
         return cursor.fetchall()
 
     def _query_filter(self, **kwargs):
@@ -53,15 +56,12 @@ class BasePostgresView(object):
     def filter(self, **kwargs):
         def __query_generate(key, dictionary):
             return "%s=%s" % (key, dictionary[key])
-        print(kwargs.keys())
         if set(kwargs.keys()) - set(self.rows_items):
            raise Exception('Fields \"%s\" not supported' % ','.join(set(kwargs.keys()) - set(self.rows_items)))
-        print(dict(kwargs))
         from functools import partial
         map_function = partial(__query_generate, dictionary=dict(kwargs))
         query = " AND ".join(list(map(map_function, kwargs.keys())))
 
-        print(query)
         result = []
         for items in self._query(wheres='WHERE %s' % query):
             result.append(self.item_class(self.rows_items, items))
