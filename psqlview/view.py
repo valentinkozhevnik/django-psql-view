@@ -16,17 +16,18 @@ class BasePostgresView(object):
     item_class = ItemsRows
     sql_view_name = None
 
-    def __init__(self, connection=None, *args, **kwargs):
+    def __init__(self, connection=None, debug=False, *args, **kwargs):
         # TODO: initial sql from psql
         if not connection:
             from django.db import connection
         self.connection = connection
-        cursor = self.connection.cursor()
-        cursor.execute(self.get_initial_view())
-        try:
-            self.connection.commit()
-        except TransactionManagementError as e:
-            pass
+        if debug:
+            cursor = self.connection.cursor()
+            cursor.execute(self.get_initial_view())
+            try:
+                self.connection.commit()
+            except TransactionManagementError as e:
+                pass
         self.cache = {}
 
     def get_initial_view(self):
@@ -55,6 +56,8 @@ class BasePostgresView(object):
 
     def filter(self, **kwargs):
         def __query_generate(key, dictionary):
+            if isinstance(dictionary[key], str):
+                return "%s=\"%s\"" % (key, dictionary[key])
             return "%s=%s" % (key, dictionary[key])
         if set(kwargs.keys()) - set(self.rows_items):
            raise Exception('Fields \"%s\" not supported' % ','.join(set(kwargs.keys()) - set(self.rows_items)))
