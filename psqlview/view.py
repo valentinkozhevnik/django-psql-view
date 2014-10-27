@@ -1,5 +1,5 @@
 from psqlview.base import Singleton
-from django.db.transaction import TransactionManagementError
+
 __author__ = 'vako'
 
 
@@ -20,6 +20,7 @@ class BasePostgresView(object):
         # TODO: initial sql from psql
         if not connection:
             from django.db import connection
+            from django.db.transaction import TransactionManagementError
         self.connection = connection
         if debug:
             cursor = self.connection.cursor()
